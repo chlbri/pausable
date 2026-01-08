@@ -17,8 +17,8 @@ describe('createPausable', () => {
     };
   });
 
-  describe('Initial state', () => {
-    it('should not emit values initially (stopped state)', () => {
+  describe('#01 => Initial state', () => {
+    it('#01 => should not emit values initially (stopped state)', () => {
       createPausable(source$, mockObserver);
 
       source$.next(1);
@@ -28,8 +28,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('start()', () => {
-    it('should start emitting values after calling start()', () => {
+  describe('#02 => start()', () => {
+    it('#01 => should start emitting values after calling start()', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -41,7 +41,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenNthCalledWith(2, 2);
     });
 
-    it('should ignore start() when already running', () => {
+    it('#02 => should ignore start() when already running', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -53,8 +53,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('stop()', () => {
-    it('should stop emitting values after calling stop()', () => {
+  describe('#03 => stop()', () => {
+    it('#01 => should stop emitting values after calling stop()', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -68,7 +68,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledWith(1);
     });
 
-    it('should stop from paused state', () => {
+    it('#02 => should stop from paused state', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -79,7 +79,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledTimes(1);
     });
 
-    it('should allow restart after stop', () => {
+    it('#03 => should allow restart after stop', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -95,8 +95,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('pause()', () => {
-    it('should pause emitting values when running', () => {
+  describe('#04 => pause()', () => {
+    it('#01 => should pause emitting values when running', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -109,7 +109,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledWith(1);
     });
 
-    it('should ignore pause when not running', () => {
+    it('#02 => should ignore pause when not running', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.pause(); // Should be ignored (stopped state)
@@ -119,7 +119,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledWith(1);
     });
 
-    it('should ignore multiple pause calls', () => {
+    it('#03 => should ignore multiple pause calls', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -132,8 +132,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('resume()', () => {
-    it('should resume emitting values after pause', () => {
+  describe('#05 => resume()', () => {
+    it('#01 => should resume emitting values after pause', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -148,7 +148,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenNthCalledWith(2, 3);
     });
 
-    it('should ignore resume when not paused', () => {
+    it('#02 => should ignore resume when not paused', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.resume(); // Should be ignored (stopped state)
@@ -157,7 +157,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).not.toHaveBeenCalled();
     });
 
-    it('should ignore resume when running', () => {
+    it('#03 => should ignore resume when running', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -168,8 +168,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('command()', () => {
-    it('should start with command("start")', () => {
+  describe('#06 => command()', () => {
+    it('#01 => should start with command("start")', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.command('start');
@@ -178,7 +178,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledWith(1);
     });
 
-    it('should stop with command("stop")', () => {
+    it('#02 => should stop with command("stop")', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.command('start');
@@ -189,7 +189,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledTimes(1);
     });
 
-    it('should pause with command("pause")', () => {
+    it('#03 => should pause with command("pause")', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.command('start');
@@ -200,7 +200,7 @@ describe('createPausable', () => {
       expect(mockObserver.next).toHaveBeenCalledTimes(1);
     });
 
-    it('should resume with command("resume")', () => {
+    it('#04 => should resume with command("resume")', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.command('start');
@@ -213,8 +213,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('Observer types', () => {
-    it('should work with function observer', () => {
+  describe('#07 => Observer types', () => {
+    it('#01 => should work with function observer', () => {
       const nextFn = vi.fn();
       const pausable = createPausable(source$, nextFn);
 
@@ -224,7 +224,7 @@ describe('createPausable', () => {
       expect(nextFn).toHaveBeenCalledWith(1);
     });
 
-    it('should work with partial observer (only next)', () => {
+    it('#02 => should work with partial observer (only next)', () => {
       const nextFn = vi.fn();
       const pausable = createPausable(source$, { next: nextFn });
 
@@ -234,7 +234,7 @@ describe('createPausable', () => {
       expect(nextFn).toHaveBeenCalledWith(1);
     });
 
-    it('should work with full observer', () => {
+    it('#03 => should work with full observer', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -245,7 +245,7 @@ describe('createPausable', () => {
       expect(mockObserver.complete).toHaveBeenCalled();
     });
 
-    it('should work without observer', () => {
+    it('#04 => should work without observer', () => {
       expect(() => {
         const pausable = createPausable(source$);
         pausable.start();
@@ -254,8 +254,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('Error handling', () => {
-    it('should propagate errors to observer', () => {
+  describe('#08 => Error handling', () => {
+    it('#01 => should propagate errors to observer', () => {
       const pausable = createPausable(source$, mockObserver);
       const error = new Error('Test error');
 
@@ -266,8 +266,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('Complex state transitions', () => {
-    it('should handle start -> pause -> resume -> stop -> start', () => {
+  describe('#09 => Complex state transitions', () => {
+    it('#01 => should handle start -> pause -> resume -> stop -> start', () => {
       const pausable = createPausable(source$, mockObserver);
 
       pausable.start();
@@ -292,8 +292,8 @@ describe('createPausable', () => {
     });
   });
 
-  describe('Integration with RxJS operators', () => {
-    it('should work with interval observable', async () => {
+  describe('#10 => Integration with RxJS operators', () => {
+    it('#01 => should work with interval observable', async () => {
       const values: number[] = [];
       const pausable = createPausable(interval(10).pipe(take(5)), value =>
         values.push(value),
