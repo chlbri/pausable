@@ -63,10 +63,13 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - ✨ Add `createPausable` utility function for RxJS observables
-- 🎛️ Implement state machine with `start`, `stop`, `pause`, and `resume` controls
+- 🎛️ Implement state machine with `start`, `stop`, `pause`, and `resume`
+  controls
 - 🔄 Add `command()` method for programmatic state control
-- 📦 Support multiple observer types (function, partial, full, or undefined)
-- 🔌 Proper subscription lifecycle management with unsubscribe on pause/stop
+- 📦 Support multiple observer types (function, partial, full, or
+  undefined)
+- 🔌 Proper subscription lifecycle management with unsubscribe on
+  pause/stop
 
 ### Documentation
 
@@ -87,7 +90,8 @@ All notable changes to this project will be documented in this file.
 
 ### Technical Details
 
-- Pause/resume semantics: unsubscribes on pause, fresh subscription on resume
+- Pause/resume semantics: unsubscribes on pause, fresh subscription on
+  resume
 - State machine prevents invalid transitions
 - Cold observables restart from beginning after resume
 - Full lifecycle support: next, error, complete forwarding
