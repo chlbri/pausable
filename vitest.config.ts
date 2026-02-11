@@ -1,13 +1,8 @@
 import { aliasTs } from '@bemedev/vitest-alias';
-import { exclude } from '@bemedev/vitest-exclude';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, defaultExclude } from 'vitest/config';
 import tsconfig from './tsconfig.json';
 
 export default defineConfig({
-  plugins: [
-    aliasTs(tsconfig as any),
-    exclude({ ignoreCoverageFiles: ['**/types.ts'] }),
-  ],
   test: {
     bail: 10,
     maxConcurrency: 10,
@@ -21,6 +16,17 @@ export default defineConfig({
       reportsDirectory: '.coverage',
       all: true,
       provider: 'v8',
+      exclude: [...defaultExclude, '**/*/types.ts'],
     },
+    projects: [
+      {
+        extends: true,
+        plugins: [aliasTs(tsconfig as any)],
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+        },
+      },
+    ],
   },
 });
