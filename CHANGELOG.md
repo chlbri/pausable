@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[0.0.4] - 11/02/2026** => _14:01_
+
+</summary>
+
+### Refactor
+
+- 🔧 Réorganiser la configuration de Vitest pour simplifier les plugins
+- ♻️ Supprimer le plugin `@bemedev/vitest-exclude` au profit de
+  `defaultExclude`
+- 📁 Améliorer la structure avec `projects` pour une meilleure organisation
+  des tests
+- 🎯 Optimiser l'exclusion des fichiers de couverture (`**/*/types.ts`)
+
+### Dependencies
+
+- 📦 Update pnpm-lock.yaml (optimize dependencies)
+- 🔼 Bump version to 0.0.4
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[0.0.3] - 10/02/2026** => _10:00_
 
 </summary>
