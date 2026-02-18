@@ -1,6 +1,6 @@
 {
   "name": "@bemedev/rx-pausable",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "A pausable wrapper for RxJS observables with start, stop, pause, and resume controls",
   "author": {
     "email": "bri_lvi@icloud.com",

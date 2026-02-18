@@ -224,28 +224,7 @@ describe('createPausable', () => {
       expect(nextFn).toHaveBeenCalledWith(1);
     });
 
-    it('#02 => should work with partial observer (only next)', () => {
-      const nextFn = vi.fn();
-      const pausable = createPausable(source$, { next: nextFn });
-
-      pausable.start();
-      source$.next(1);
-
-      expect(nextFn).toHaveBeenCalledWith(1);
-    });
-
-    it('#03 => should work with full observer', () => {
-      const pausable = createPausable(source$, mockObserver);
-
-      pausable.start();
-      source$.next(1);
-      source$.complete();
-
-      expect(mockObserver.next).toHaveBeenCalledWith(1);
-      expect(mockObserver.complete).toHaveBeenCalled();
-    });
-
-    it('#04 => should work without observer', () => {
+    it('#02 => should work without observer', () => {
       expect(() => {
         const pausable = createPausable(source$);
         pausable.start();

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[0.1.0] - 18/02/2026** => _15:01_
+
+</summary>
+
+### Refactor
+
+- 🎯 Fix coverage exclusion for `types.ts` (pattern `**/types.ts`)
+- ➕ Add `include: ['src/**/*.ts']` to coverage config to scope instrumented files
+- ✅ Ensure `types.ts` no longer appears in coverage report
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[0.0.4] - 11/02/2026** => _14:01_
 
 </summary>

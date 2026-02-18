@@ -1,77 +1,45 @@
-import type { Observable, Subscription } from 'rxjs';
-import type { Command, State, SubArgs } from './types';
+import { Subject } from 'rxjs/internal/Subject';
+import { EMPTY } from 'rxjs/internal/observable/empty';
+import { scan } from 'rxjs/internal/operators/scan';
+import { startWith } from 'rxjs/internal/operators/startWith';
+import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { Observable, type Observer } from 'rxjs';
+
+type SubArgs<T> = Partial<Observer<T>> | ((value: T) => void);
 
 const createPausable = <T>(
   source$: Observable<T>,
   observer?: SubArgs<T>,
 ) => {
-  let state: State = 'stopped';
-  let sourceSubscription: Subscription | null = null;
+  // Control Subject for start, stop, pause, and resume
+  const control$ = new Subject<'start' | 'stop' | 'pause' | 'resume'>();
 
-  const subscribe = () => {
-    sourceSubscription = source$.subscribe({
-      next: value => {
-        if (state === 'running') {
-          if (typeof observer === 'function') {
-            observer(value);
-          } else if (observer?.next) {
-            observer.next(value);
-          }
-        }
-      },
-      error: err => {
-        if (typeof observer === 'object' && observer?.error) {
-          observer.error(err);
-        }
-      },
-      complete: () => {
-        if (typeof observer === 'object' && observer?.complete) {
-          observer.complete();
-        }
-      },
-    });
-  };
+  // State management for the observable
+  const controlled$ = control$.pipe(
+    startWith('stop'), // Start in "stopped" state
+    scan((state, action) => {
+      if (action === 'start' && state !== 'running') return 'running';
+      if (action === 'stop') return 'stopped';
+      if (action === 'pause' && state === 'running') return 'paused';
+      if (action === 'resume' && state === 'paused') return 'running';
+      return state; // Ignore invalid transitions
+    }, 'stopped'),
+    switchMap(state => {
+      if (state === 'running') return source$; // Emit values when running
+      return EMPTY; // Emit nothing when paused or stopped
+    }),
+  );
 
-  const unsubscribe = () => {
-    if (sourceSubscription) {
-      sourceSubscription.unsubscribe();
-      sourceSubscription = null;
-    }
-  };
-
-  const start = () => {
-    if (state !== 'stopped') return;
-    state = 'running';
-    subscribe();
-  };
-
-  const stop = () => {
-    if (state === 'stopped') return;
-    state = 'stopped';
-    unsubscribe();
-  };
-
-  const pause = () => {
-    if (state !== 'running') return;
-    state = 'paused';
-    unsubscribe();
-  };
-
-  const resume = () => {
-    if (state !== 'paused') return;
-    state = 'running';
-    subscribe();
-  };
-
-  const ACTIONS = { start, stop, pause, resume };
-  const command = (action: Command) => ACTIONS[action]();
+  // Subscribe to the controlled Observable
+  controlled$.subscribe(observer);
 
   return {
-    start,
-    stop,
-    pause,
-    resume,
-    command,
+    start: () => control$.next('start'),
+    stop: () => control$.next('stop'),
+    pause: () => control$.next('pause'),
+    resume: () => control$.next('resume'),
+    command: (action: 'start' | 'stop' | 'pause' | 'resume') =>
+      control$.next(action),
   };
 };
 

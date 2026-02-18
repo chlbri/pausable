@@ -16,12 +16,14 @@ export default defineConfig({
       reportsDirectory: '.coverage',
       all: true,
       provider: 'v8',
-      exclude: [...defaultExclude, '**/*/types.ts'],
+      include: ['src/**/*.ts'],
+      exclude: [...defaultExclude, '**/types.ts'],
     },
     projects: [
       {
         extends: true,
         plugins: [aliasTs(tsconfig as any)],
+
         test: {
           name: 'unit',
           include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
