@@ -12,7 +12,8 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - 🎯 Fix coverage exclusion for `types.ts` (pattern `**/types.ts`)
-- ➕ Add `include: ['src/**/*.ts']` to coverage config to scope instrumented files
+- ➕ Add `include: ['src/**/*.ts']` to coverage config to scope
+  instrumented files
 - ✅ Ensure `types.ts` no longer appears in coverage report
 - <u>Test coverage **_100%_**</u>
 
