@@ -3,14 +3,9 @@ import { EMPTY } from 'rxjs/internal/observable/empty';
 import { scan } from 'rxjs/internal/operators/scan';
 import { startWith } from 'rxjs/internal/operators/startWith';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { Observable, type Observer } from 'rxjs';
+import type { CreatePausable_F } from './types';
 
-type SubArgs<T> = Partial<Observer<T>> | ((value: T) => void);
-
-const createPausable = <T>(
-  source$: Observable<T>,
-  observer?: SubArgs<T>,
-) => {
+export const createPausable: CreatePausable_F = (source$, observer) => {
   // Control Subject for start, stop, pause, and resume
   const control$ = new Subject<'start' | 'stop' | 'pause' | 'resume'>();
 
@@ -43,4 +38,4 @@ const createPausable = <T>(
   };
 };
 
-export default createPausable;
+export * from './types';

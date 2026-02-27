@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Subject, interval } from 'rxjs';
 import { take } from 'rxjs/operators';
-import createPausable from './index';
+import { createPausable } from './index';
 import type { Observer } from 'rxjs';
 
 describe('createPausable', () => {

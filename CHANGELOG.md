@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[0.2.0] - 27/02/2026** => _20:41_
+
+</summary>
+
+### Dependencies
+
+- Export all types from `src/types.ts` in `index.ts` for better type
+  accessibility
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[0.1.0] - 18/02/2026** => _15:01_
 
 </summary>
