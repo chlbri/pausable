@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.0.1] - 03/03/2026** => _12:21_
+
+</summary>
+
+### Refactor
+
+- ♻️ Extract `perform` utility into new `src/helpers.ts` module
+- 🔄 Move `Delayed<T>` type from `src/index.ts` to `src/types.ts` and export it
+- 🏷️ Rename internal `array` buffer to `events` for clarity
+- 🧩 Extract `RESUME_ACTIONS` object to centralize resume event dispatching
+- 🧩 Extract `startObserver` object to separate start-phase subscription logic
+- 🗂️ Group all control methods (`start`, `stop`, `pause`, `resume`, `command`) into a single `out` object using method shorthand syntax
+- ↩️ `start()` now returns the RxJS subscription created internally
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[1.0.0] - 03/03/2026** => _02:19_
 
 </summary>

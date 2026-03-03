@@ -1,34 +1,29 @@
 import { Subject } from 'rxjs/internal/Subject';
-import type { Command, CreatePausable_F } from './types';
-
-type Delayed<T = any> = {
-  delay: number;
-  value: T;
-  isError: boolean;
-  isComplete?: boolean;
-};
+import type { Command, CreatePausable_F, Delayed } from './types';
+import { perform as _perform } from './helpers';
+import { Observer } from 'rxjs';
 
 export const createPausable: CreatePausable_F = (source$, observer) => {
   let lastPaused = Date.now();
-  const array: Delayed[] = [];
+  const events: Delayed[] = [];
 
   source$.subscribe({
     next: value => {
-      array.push({
+      events.push({
         delay: Date.now(),
         value,
         isError: false,
       });
     },
     error: value => {
-      array.push({
+      events.push({
         delay: Date.now(),
         value,
         isError: true,
       });
     },
     complete: () => {
-      array.push({
+      events.push({
         delay: Date.now(),
         value: undefined,
         isError: false,
@@ -39,96 +34,92 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
 
   let command: Command = 'stop';
   const subject$ = new Subject<any>();
+  subject$.subscribe(observer);
   let hasBeenPaused = false;
   const canClear = () => command === 'pause' || command === 'stop';
 
-  // Subscribe to the controlled Observable
-  subject$.subscribe(observer);
-
-  const start = () => {
-    if (command !== 'stop') return;
-    command = 'start';
-    source$.subscribe({
-      next: value => {
-        if (command === 'pause' || command === 'stop') return;
-        subject$.next(value);
-        array.shift();
-      },
-      error: value => {
-        if (command === 'pause' || command === 'stop') return;
-        subject$.error(value);
-        array.shift();
-      },
-      complete: () => {
-        if (!hasBeenPaused) {
-          command = 'stop';
-          subject$.complete();
-        }
-      },
+  const perform = (timer: NodeJS.Timeout, action: () => void) => {
+    return _perform(timer, canClear, () => {
+      action();
+      return events.shift();
     });
   };
 
-  const stop = () => {
-    if (command === 'stop') return;
-    command = 'stop';
-  };
-
-  const pause = () => {
-    if (command === 'pause' || command === 'stop') return;
-    command = 'pause';
-    if (!hasBeenPaused) {
-      lastPaused = Date.now();
-      hasBeenPaused = true;
-    }
-  };
-
-  const resume = () => {
-    if (command === 'resume' || command === 'start') return;
-    command = 'resume';
-
-    for (const { delay, value, isError, isComplete } of array) {
-      const timeout = delay - lastPaused;
-      if (isError) {
-        const timer = setTimeout(() => {
-          if (canClear()) {
-            return clearTimeout(timer);
-          }
-          subject$.error(value);
-          return subject$.complete();
-        }, timeout);
-      }
-
-      if (isComplete) {
-        const timer = setTimeout(() => {
-          if (canClear()) {
-            return clearTimeout(timer);
-          }
-          subject$.complete();
-          command = 'stop';
-        }, timeout);
-      }
-
-      const timer = setTimeout(() => {
-        if (canClear()) {
-          return clearTimeout(timer);
-        }
-        subject$.next(value);
-        array.shift();
-      }, timeout);
-    }
-  };
-
-  return {
-    start,
-    stop,
-    pause,
-    resume,
-    command: (action: 'start' | 'stop' | 'pause' | 'resume') => {
-      if (action === 'start') return start();
-      if (action === 'stop') return stop();
-      if (action === 'pause') return pause();
-      if (action === 'resume') return resume();
+  const RESUME_ACTIONS = {
+    next: (value: any) => subject$.next(value),
+    error: (value: any) => {
+      subject$.error(value);
+      return subject$.complete();
     },
+    complete: () => {
+      subject$.complete();
+      command = 'stop';
+    },
+  };
+
+  const startObserver: Observer<any> = {
+    next: value => {
+      if (canClear()) return;
+      subject$.next(value);
+      events.shift();
+    },
+    error: value => {
+      if (canClear()) return;
+      subject$.error(value);
+      events.shift();
+    },
+    complete: () => {
+      if (!hasBeenPaused) {
+        command = 'stop';
+        subject$.complete();
+      }
+    },
+  };
+
+  const out = {
+    start() {
+      if (command !== 'stop') return;
+      command = 'start';
+      return source$.subscribe(startObserver);
+    },
+
+    stop() {
+      if (command === 'stop') return;
+      command = 'stop';
+    },
+
+    pause() {
+      if (canClear()) return;
+      command = 'pause';
+
+      if (!hasBeenPaused) {
+        lastPaused = Date.now();
+        hasBeenPaused = true;
+      }
+    },
+
+    resume() {
+      const __check = command === 'resume' || command === 'start';
+      if (__check) return;
+      command = 'resume';
+
+      for (const { delay, value, isError, isComplete } of events) {
+        const timeout = delay - lastPaused;
+
+        const timer = setTimeout(() => {
+          perform(timer, () => {
+            if (isError) return RESUME_ACTIONS.error(value);
+            if (isComplete) return RESUME_ACTIONS.complete();
+            return RESUME_ACTIONS.next(value);
+          });
+        }, timeout);
+      }
+    },
+
+    command(action: Command) {
+      return this[action]();
+    },
+
     get state() {
       return command === 'stop'
         ? 'stopped'
@@ -137,6 +128,8 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
           : 'paused';
     },
   };
+
+  return out;
 };
 
 export * from './types';

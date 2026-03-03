@@ -17,3 +17,10 @@ export type CreatePausable_F = <T>(
   source$: Observable<T>,
   observer?: SubArgs<T>,
 ) => Pausable;
+
+export type Delayed<T = any> = {
+  delay: number;
+  value: T;
+  isError: boolean;
+  isComplete?: boolean;
+};
