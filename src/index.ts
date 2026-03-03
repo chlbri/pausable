@@ -38,7 +38,10 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
   let hasBeenPaused = false;
   const canClear = () => command === 'pause' || command === 'stop';
 
-  const perform = (timer: NodeJS.Timeout, action: () => void) => {
+  const perform = (
+    timer: ReturnType<typeof setTimeout>,
+    action: () => void,
+  ) => {
     return _perform(timer, canClear, () => {
       action();
       return events.shift();
