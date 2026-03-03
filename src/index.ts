@@ -1,40 +1,119 @@
 import { Subject } from 'rxjs/internal/Subject';
-import { EMPTY } from 'rxjs/internal/observable/empty';
-import { scan } from 'rxjs/internal/operators/scan';
-import { startWith } from 'rxjs/internal/operators/startWith';
-import { switchMap } from 'rxjs/internal/operators/switchMap';
-import type { CreatePausable_F } from './types';
+import type { Command, CreatePausable_F } from './types';
+
+type Delayed<T = any> = {
+  delay: number;
+  value: T;
+  isError: boolean;
+  isComplete?: boolean;
+};
 
 export const createPausable: CreatePausable_F = (source$, observer) => {
-  // Control Subject for start, stop, pause, and resume
-  const control$ = new Subject<'start' | 'stop' | 'pause' | 'resume'>();
+  let lastPaused = Date.now();
+  const array: Delayed[] = [];
 
-  // State management for the observable
-  const controlled$ = control$.pipe(
-    startWith('stop'), // Start in "stopped" state
-    scan((state, action) => {
-      if (action === 'start' && state !== 'running') return 'running';
-      if (action === 'stop') return 'stopped';
-      if (action === 'pause' && state === 'running') return 'paused';
-      if (action === 'resume' && state === 'paused') return 'running';
-      return state; // Ignore invalid transitions
-    }, 'stopped'),
-    switchMap(state => {
-      if (state === 'running') return source$; // Emit values when running
-      return EMPTY; // Emit nothing when paused or stopped
-    }),
-  );
+  source$.subscribe({
+    next: value => {
+      array.push({
+        delay: Date.now(),
+        value,
+        isError: false,
+      });
+    },
+    error: value => {
+      array.push({
+        delay: Date.now(),
+        value,
+        isError: true,
+      });
+    },
+    complete: () => {
+      array.push({
+        delay: Date.now(),
+        value: undefined,
+        isError: false,
+        isComplete: true,
+      });
+    },
+  });
+
+  let command: Command = 'stop';
+  const subject$ = new Subject<any>();
+  let hasBeenPaused = false;
 
   // Subscribe to the controlled Observable
-  controlled$.subscribe(observer);
+  subject$.subscribe(observer);
+
+  const start = () => {
+    if (command !== 'stop') return;
+    command = 'start';
+    source$.subscribe({
+      next: value => {
+        if (command === 'pause' || command === 'stop') return;
+        subject$.next(value);
+      },
+      error: value => {
+        if (command === 'pause' || command === 'stop') return;
+        subject$.error(value);
+      },
+      complete: () => {
+        if (!hasBeenPaused) {
+          subject$.complete();
+        }
+      },
+    });
+  };
+
+  const stop = () => {
+    if (command === 'stop') return;
+    command = 'stop';
+  };
+
+  const pause = () => {
+    if (command === 'pause' || command === 'stop') return;
+    lastPaused = Date.now();
+    command = 'pause';
+    hasBeenPaused = true;
+  };
+
+  const resume = () => {
+    command = 'resume';
+    const filtered = array.filter(({ delay }) => delay >= lastPaused);
+
+    for (const { delay, value, isError, isComplete } of filtered) {
+      if (isError) {
+        subject$.error(value);
+        return subject$.complete();
+      }
+
+      const timeout = delay - lastPaused;
+      if (isComplete) {
+        setTimeout(() => {
+          subject$.complete();
+          command = 'stop';
+        }, timeout);
+      }
+
+      const timer = setTimeout(() => {
+        subject$.next(value);
+        if (command === 'pause' || command === 'stop') {
+          return clearTimeout(timer);
+        }
+      }, timeout);
+    }
+  };
 
   return {
-    start: () => control$.next('start'),
-    stop: () => control$.next('stop'),
-    pause: () => control$.next('pause'),
-    resume: () => control$.next('resume'),
-    command: (action: 'start' | 'stop' | 'pause' | 'resume') =>
-      control$.next(action),
+    start,
+    stop,
+    pause,
+    resume,
+    command: (action: 'start' | 'stop' | 'pause' | 'resume') => {
+      if (action === 'start') return start();
+      if (action === 'stop') return stop();
+      if (action === 'pause') return pause();
+      if (action === 'resume') return resume();
+    },
   };
 };
 
