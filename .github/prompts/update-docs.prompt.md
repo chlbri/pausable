@@ -90,7 +90,8 @@ User will commit manually.
 
 - Date: DD/MM/YYYY (European format)
 - Time: HH:MM (24h format, **GMT/UTC timezone only**)
-- **IMPORTANT**: Always use GMT/UTC time for version timestamps in CHANGELOG.md
+- **IMPORTANT**: Always use GMT/UTC time for version timestamps in
+  CHANGELOG.md
 - English commit messages
 - French allowed in CHANGELOG details
 - Actions: Add, Fix, Remove, Update, Enhance, Refactor
@@ -104,3 +105,6 @@ Update CHANGELOG.md with version X.Y.Z changes
 
 @chlbri:bri_lvi@icloud.com
 ```
+
+NB : ALWAYS IN ENGLISH, EVEN FOR INTERNAL COMMUNICATIONS. DO NOT USE FRENCH
+OR OTHER LANGUAGES IN COMMIT MESSAGES OR ANY PUBLIC COMMUNICATIONS.

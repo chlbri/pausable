@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.0.0] - 03/03/2026** => _02:19_
+
+</summary>
+
+### Breaking Changes
+
+- ♻️ Complete rewrite of `createPausable` internal implementation —
+  replaced RxJS pipeline (`scan`, `switchMap`, `startWith`, `EMPTY`) with a
+  custom time-based buffering system
+
+### Features
+
+- ✨ Add `state` getter on `Pausable` — returns `'stopped'` | `'running'` |
+  `'paused'`
+- 🔄 Values and errors emitted during pause are now buffered and re-emitted
+  after `resume()` with correct relative timing
+- 📦 Add exported `Command` type in `src/types.ts`
+
+### Refactor
+
+- 🧪 Refactor tests — introduce `usePrepare()` helper for better isolation
+  per `describe` block
+- 🗂️ Convert nested `it()` calls into numbered `describe()` blocks for
+  better organization
+
+### Dependencies
+
+- 🔼 Update `@types/node` `^25.3.2` → `^25.3.3`
+- 🔼 Update `globals` `^17.3.0` → `^17.4.0`
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[0.2.0] - 27/02/2026** => _20:41_
 
 </summary>
@@ -47,12 +85,10 @@ All notable changes to this project will be documented in this file.
 
 ### Refactor
 
-- 🔧 Réorganiser la configuration de Vitest pour simplifier les plugins
-- ♻️ Supprimer le plugin `@bemedev/vitest-exclude` au profit de
-  `defaultExclude`
-- 📁 Améliorer la structure avec `projects` pour une meilleure organisation
-  des tests
-- 🎯 Optimiser l'exclusion des fichiers de couverture (`**/*/types.ts`)
+- 🔧 Reorganize Vitest configuration to simplify plugins
+- ♻️ Remove `@bemedev/vitest-exclude` plugin in favor of `defaultExclude`
+- 📁 Improve structure with `projects` for better test organization
+- 🎯 Optimize coverage file exclusion (`**/*/types.ts`)
 
 ### Dependencies
 
