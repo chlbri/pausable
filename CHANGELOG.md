@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.0.2] - 03/03/2026** => _12:35_
+
+</summary>
+
+### Docs
+
+- 📝 Add JSDoc comments to all exported types in `src/types.ts` (`SubArgs`, `Command`, `State`, `Pausable`, `CreatePausable_F`, `Delayed`)
+- 📝 Add JSDoc to `perform` helper in `src/helpers.ts`
+- 📝 Add JSDoc to `createPausable` in `src/index.ts`, including `@example` usage
+- 📝 Document all internal variables and methods inside `createPausable` (`lastPaused`, `events`, `canClear`, `perform`, `RESUME_ACTIONS`, `startObserver`, `out.*`)
+
+### Refactor
+
+- 🏷️ Replace `NodeJS.Timeout` with `ReturnType<typeof setTimeout>` for the `timer` parameter in the internal `perform` wrapper for cross-runtime compatibility
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[1.0.1] - 03/03/2026** => _12:21_
 
 </summary>
