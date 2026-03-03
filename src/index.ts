@@ -40,6 +40,7 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
   let command: Command = 'stop';
   const subject$ = new Subject<any>();
   let hasBeenPaused = false;
+  const canClear = () => command === 'pause' || command === 'stop';
 
   // Subscribe to the controlled Observable
   subject$.subscribe(observer);
@@ -51,13 +52,16 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
       next: value => {
         if (command === 'pause' || command === 'stop') return;
         subject$.next(value);
+        array.shift();
       },
       error: value => {
         if (command === 'pause' || command === 'stop') return;
         subject$.error(value);
+        array.shift();
       },
       complete: () => {
         if (!hasBeenPaused) {
+          command = 'stop';
           subject$.complete();
         }
       },
@@ -71,34 +75,45 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
 
   const pause = () => {
     if (command === 'pause' || command === 'stop') return;
-    lastPaused = Date.now();
     command = 'pause';
-    hasBeenPaused = true;
+    if (!hasBeenPaused) {
+      lastPaused = Date.now();
+      hasBeenPaused = true;
+    }
   };
 
   const resume = () => {
+    if (command === 'resume' || command === 'start') return;
     command = 'resume';
-    const filtered = array.filter(({ delay }) => delay >= lastPaused);
 
-    for (const { delay, value, isError, isComplete } of filtered) {
+    for (const { delay, value, isError, isComplete } of array) {
+      const timeout = delay - lastPaused;
       if (isError) {
-        subject$.error(value);
-        return subject$.complete();
+        const timer = setTimeout(() => {
+          if (canClear()) {
+            return clearTimeout(timer);
+          }
+          subject$.error(value);
+          return subject$.complete();
+        }, timeout);
       }
 
-      const timeout = delay - lastPaused;
       if (isComplete) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          if (canClear()) {
+            return clearTimeout(timer);
+          }
           subject$.complete();
           command = 'stop';
         }, timeout);
       }
 
       const timer = setTimeout(() => {
-        subject$.next(value);
-        if (command === 'pause' || command === 'stop') {
+        if (canClear()) {
           return clearTimeout(timer);
         }
+        subject$.next(value);
+        array.shift();
       }, timeout);
     }
   };
@@ -113,6 +128,13 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
       if (action === 'stop') return stop();
       if (action === 'pause') return pause();
       if (action === 'resume') return resume();
+    },
+    get state() {
+      return command === 'stop'
+        ? 'stopped'
+        : command === 'start' || command === 'resume'
+          ? 'running'
+          : 'paused';
     },
   };
 };

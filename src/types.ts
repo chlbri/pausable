@@ -10,6 +10,7 @@ export type Pausable = {
   pause: () => void;
   resume: () => void;
   command: (action: 'start' | 'stop' | 'pause' | 'resume') => void;
+  state: State;
 };
 
 export type CreatePausable_F = <T>(
