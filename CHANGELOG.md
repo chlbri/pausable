@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.0.3] - 04/03/2026** => _00:07_
+
+</summary>
+
+### Features
+
+- ♻️ `start()` now fully resets internal state (fresh `Subject`, cleared event buffer, reset `lastPaused` and `hasBeenPaused`), enabling true restart after `stop()`
+
+### Refactor
+
+- 🔀 Move `arrayObserver` and `startObserver` definitions inside `start()` so each call gets a clean subscription context
+- 🏗️ Lazily initialise `subject$` and `_source$` — they are now created on each `start()` call instead of at construction time
+- 🛡️ Simplify `resume()` guard: `command !== 'pause'` replaces the previous two-condition check
+- 🔒 `RESUME_ACTIONS.error` now also sets `command = 'stop'` before completing the subject, ensuring consistent state after an error replay
+- ✅ Add test cases #34–#44 covering restart after a full stop (verifies clean state and correct re-emission from a fresh `interval`)
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[1.0.2] - 03/03/2026** => _12:35_
 
 </summary>

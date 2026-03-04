@@ -10,14 +10,17 @@ controls.
 
 - 🎛️ **State Management**: Control observable streams with `start`, `stop`,
   `pause`, and `resume`
-- �️ **State Inspector**: Read the current state (`'stopped'` | `'running'`
+- 🔁 **Restartable**: Call `start()` again after `stop()` to fully restart
+  the stream with a clean slate
+- 🗺️ **State Inspector**: Read the current state (`'stopped'` | `'running'`
   | `'paused'`) via the `state` property
 - 🔄 **Command Interface**: Programmatic control via `command()` method
 - 🧩 **Smart Buffering**: Values emitted during pause are buffered and
   re-emitted after `resume()` with correct relative timing
 - 📦 **Flexible Observers**: Support for function, partial, full, or no
   observer
-- 🔌 **Proper Lifecycle**: Automatic subscription management and cleanup
+- 🔌 **Proper Lifecycle**: Automatic subscription management and cleanup per
+  `start()` call
 - 💪 **TypeScript**: Full type safety with TypeScript support
 - ✅ **Well Tested**: 100% test coverage with comprehensive test suite
 
@@ -136,13 +139,18 @@ Creates a pausable wrapper around an RxJS observable.
 
 #### `start(): void`
 
-Starts emitting values from the observable. Only works from `stopped`
-state.
+Starts (or **restarts**) the stream. Only works from the `stopped` state.
+
+Each call fully resets internal state: a fresh internal `Subject` is
+created, the event buffer is cleared, and timing references are reset. This
+means calling `start()` after `stop()` is safe and produces a clean new
+subscription to the source observable.
 
 #### `stop(): void`
 
-Stops emitting values and unsubscribes from the observable. Can be called
-from any state.
+Stops the stream. Cancels any pending resume timers and sets the instance
+back to the `stopped` state, from which it can be restarted with `start()`.
+Can be called from any non-`stopped` state.
 
 #### `pause(): void`
 
@@ -167,25 +175,70 @@ Returns the current state of the pausable wrapper.
 The pausable wrapper implements a simple state machine:
 
 ```
-stopped ──start()──> running ──pause()──> paused
-   ↑                    │                    │
-   │                    │                    │
-   └────────────────stop()──────────────resume()
+  ┌─────────────────────────────────────────────────┐
+  │                    start()                       │
+  ▼                                                  │
+stopped ──start()──> running ──pause()──> paused     │
+            │                                │        │
+            │           stop()               │        │
+            └──────────────────────────────► │        │
+                                             ▼        │
+                                           stopped ───┘
+                                             ▲
+                                             │ stop()
+                                           paused ──resume()──> running
 ```
 
 **States:**
 
-- `stopped`: Initial state, not forwarding values from source
+- `stopped`: Initial state (or after `stop()`); not forwarding values.
+  Calling `start()` resets all internal state and begins a fresh subscription.
 - `running`: Actively forwarding values from source to observer
-- `paused`: Stream paused; source values are buffered until `resume()`
+- `paused`: Stream suspended; source values are buffered until `resume()`
 
-**Invalid transitions are ignored:**
+**Valid transitions:**
+
+| Current state | Action     | Next state |
+|---------------|------------|------------|
+| `stopped`     | `start()`  | `running`  |
+| `running`     | `pause()`  | `paused`   |
+| `running`     | `stop()`   | `stopped`  |
+| `paused`      | `resume()` | `running`  |
+| `paused`      | `stop()`   | `stopped`  |
+
+**Invalid transitions are silently ignored:**
 
 - `start()` when already `running` or `paused`
 - `pause()` when `stopped` or already `paused`
 - `resume()` when `stopped` or `running`
+- `stop()` when already `stopped`
 
 ## Behavior Notes
+
+### Restart Semantics
+
+Calling `stop()` followed by `start()` performs a **full restart**: all
+internal state (event buffer, timing references, internal subject) is
+discarded and recreated fresh. The observer originally passed to
+`createPausable` is re-subscribed automatically.
+
+```typescript
+import { interval } from 'rxjs';
+import { createPausable } from '@bemedev/rx-pausable';
+
+const values: number[] = [];
+const pausable = createPausable(interval(1000), v => values.push(v as number));
+
+pausable.start();
+// ... after some time: values = [0, 1, 2]
+
+pausable.stop();
+// values stay as-is; no more emissions
+
+pausable.start(); // fresh restart — buffer and timing reset
+// ... after some time: values = [0, 1, 2, 0, 1, 2, ...]
+//                                ↑ first run   ↑ second run (restarts from 0)
+```
 
 ### Pause/Resume Semantics
 

@@ -1,7 +1,7 @@
 import { Subject } from 'rxjs/internal/Subject';
 import type { Command, CreatePausable_F, Delayed } from './types';
 import { perform as _perform } from './helpers';
-import { Observer } from 'rxjs';
+import { Observable, Observer } from 'rxjs';
 
 /**
  * Creates a {@link Pausable} wrapper around a source RxJS observable.
@@ -35,41 +35,13 @@ import { Observer } from 'rxjs';
  * ```
  */
 export const createPausable: CreatePausable_F = (source$, observer) => {
+  let _source$: Observable<any>;
+  let subject$: Subject<any>;
   let lastPaused = Date.now();
+  let hasBeenPaused = false;
   const events: Delayed[] = [];
 
-  source$.subscribe({
-    next: value => {
-      events.push({
-        delay: Date.now(),
-        value,
-        isError: false,
-      });
-    },
-    error: value => {
-      events.push({
-        delay: Date.now(),
-        value,
-        isError: true,
-      });
-    },
-    complete: () => {
-      events.push({
-        delay: Date.now(),
-        value: undefined,
-        isError: false,
-        isComplete: true,
-      });
-    },
-  });
-
   let command: Command = 'stop';
-
-  const subject$ = new Subject<any>();
-  subject$.subscribe(observer);
-
-  let hasBeenPaused = false;
-
   const canClear = () => command === 'pause' || command === 'stop';
 
   const perform = (
@@ -87,31 +59,14 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
 
     error: (value: any) => {
       subject$.error(value);
+      command = 'stop';
       return subject$.complete();
     },
 
     complete: () => {
       subject$.complete();
       command = 'stop';
-    },
-  };
-
-  const startObserver: Observer<any> = {
-    next: value => {
-      if (canClear()) return;
-      subject$.next(value);
       events.shift();
-    },
-    error: value => {
-      if (canClear()) return;
-      subject$.error(value);
-      events.shift();
-    },
-    complete: () => {
-      if (!hasBeenPaused) {
-        command = 'stop';
-        subject$.complete();
-      }
     },
   };
 
@@ -128,7 +83,59 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
     start() {
       if (command !== 'stop') return;
       command = 'start';
-      return source$.subscribe(startObserver);
+      _source$ = source$.pipe();
+      subject$ = new Subject();
+
+      const arrayObserver: Observer<any> = {
+        next: value => {
+          events.push({
+            delay: Date.now(),
+            value,
+            isError: false,
+          });
+        },
+        error: value => {
+          events.push({
+            delay: Date.now(),
+            value,
+            isError: true,
+          });
+        },
+        complete: () => {
+          events.push({
+            delay: Date.now(),
+            value: undefined,
+            isError: false,
+            isComplete: true,
+          });
+        },
+      };
+
+      const startObserver: Observer<any> = {
+        next: value => {
+          if (canClear()) return;
+          subject$.next(value);
+          events.shift();
+        },
+        error: value => {
+          if (canClear()) return;
+          subject$.error(value);
+          events.shift();
+        },
+        complete: () => {
+          if (!hasBeenPaused) {
+            command = 'stop';
+            subject$.complete();
+            events.shift();
+          }
+        },
+      };
+
+      _source$.subscribe(arrayObserver);
+      lastPaused = Date.now();
+      hasBeenPaused = false;
+      subject$.subscribe(observer);
+      return _source$.subscribe(startObserver);
     },
 
     /**
@@ -172,16 +179,15 @@ export const createPausable: CreatePausable_F = (source$, observer) => {
      * `'resume'`).
      */
     resume() {
-      const __check = command === 'resume' || command === 'start';
+      const __check = command !== 'pause';
       if (__check) return;
       command = 'resume';
 
       for (const { delay, value, isError, isComplete } of events) {
-        /** Milliseconds between the pause moment and when this event arrived. */
         const timeout = delay - lastPaused;
 
         const timer = setTimeout(() => {
-          perform(timer, () => {
+          return perform(timer, () => {
             if (isError) return RESUME_ACTIONS.error(value);
             if (isComplete) return RESUME_ACTIONS.complete();
             return RESUME_ACTIONS.next(value);

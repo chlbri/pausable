@@ -660,6 +660,55 @@ describe('createPausable', () => {
 
       it('#33 => values still [0, 1, 2, 3, 4]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4]);
+        console.log(pausable.state);
+      });
+
+      it('#34 => resume again', () => pausable.resume());
+
+      it('#35 => values still [0, 1, 2, 3, 4]', () => {
+        expect(values).toEqual([0, 1, 2, 3, 4]);
+      });
+
+      it('#36 => advance 1000s', () => {
+        vi.advanceTimersByTime(WAITER * 1000);
+      });
+
+      it('#37 => values still [0, 1, 2, 3, 4]', () => {
+        expect(values).toEqual([0, 1, 2, 3, 4]);
+      });
+
+      it('#38 => Restart', () => {
+        pausable.start();
+      });
+
+      it('#39 => advance 4s', () => {
+        console.log(pausable.state);
+        vi.advanceTimersByTime(WAITER * 4);
+      });
+
+      it('#40 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3]', () => {
+        console.log(pausable.state);
+        expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3]);
+      });
+
+      it('#41 => advance 1s', () => {
+        console.log(pausable.state);
+        vi.advanceTimersByTime(WAITER);
+      });
+
+      it('#42 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
+        console.log(pausable.state);
+        expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
+      });
+
+      it('#43 => advance 4000s', () => {
+        console.log(pausable.state);
+        vi.advanceTimersByTime(WAITER * 4000);
+      });
+
+      it('#44 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
+        console.log(pausable.state);
+        expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
       });
     });
 
