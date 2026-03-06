@@ -17,7 +17,7 @@ export default defineConfig({
       all: true,
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: [...defaultExclude, '**/types.ts'],
+      exclude: defaultExclude.concat('**/types.ts'),
     },
     projects: [
       {
