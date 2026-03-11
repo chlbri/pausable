@@ -4,11 +4,10 @@ import { perform as _perform } from './helpers';
 import { Observable, Observer } from 'rxjs';
 
 /**
- * Internal class that backs the {@link Pausable} public type.
+ * Internal class that backs the {@linkcode Pausable} public type.
  *
- * The constructor is private — use {@link createPausable} to obtain an
- * instance. All mutable run-time state is scoped to each `start()` / `renew()`
- * call so that consecutive runs are fully isolated from one another.
+ * The constructor is private — use {@linkcode createPausable} to obtain an
+ * instance.
  *
  * @template T - The value type emitted by the source observable.
  */
@@ -39,17 +38,11 @@ class Pausable<T = any> {
   get #resumeActions() {
     return {
       next: (value: T) => this.#subject$.next(value),
+      complete: this.stop,
 
       error: (value: unknown) => {
         this.#subject$.error(value);
-        this.#command = 'stop';
-        this.#subject$.complete();
-      },
-
-      complete: () => {
-        this.#subject$.complete();
-        this.#command = 'stop';
-        this.#events.shift();
+        this.stop();
       },
     };
   }
@@ -86,15 +79,13 @@ class Pausable<T = any> {
       error: value => {
         if (this.#canClear()) return;
         this.#subject$.error(value);
-        this.#events.shift();
+        this.stop();
       },
       complete: () => {
         // Only forward completion immediately if we have never been paused.
         // If we have been paused, buffered events may still need replay.
         if (!this.#hasBeenPaused) {
-          this.#command = 'stop';
-          this.#subject$.complete();
-          this.#events.shift();
+          this.stop();
         }
       },
     };
@@ -109,7 +100,6 @@ class Pausable<T = any> {
    * to the observer.
    *
    * Has no effect if the instance is not currently in the `'stopped'` state.
-   * To switch to a different source observable, use {@link renew} instead.
    */
   start = () => {
     if (this.#command !== 'stop') return;
@@ -124,6 +114,7 @@ class Pausable<T = any> {
   stop = () => {
     if (this.#command === 'stop') return;
     this.#subject$.complete();
+    this.#events.length = 0;
     this.#command = 'stop';
   };
 
@@ -157,13 +148,13 @@ class Pausable<T = any> {
   resume = () => {
     if (this.#command !== 'pause') return;
     this.#command = 'resume';
+    const actions = this.#resumeActions;
 
     for (const { delay, value, isError, isComplete } of this.#events) {
       const timeout = delay - this.#lastPaused;
 
       const timer = setTimeout(() => {
         return this.#perform(timer, () => {
-          const actions = this.#resumeActions;
           if (isError) return actions.error(value);
           if (isComplete) return actions.complete();
           return actions.next(value);
@@ -173,36 +164,12 @@ class Pausable<T = any> {
   };
 
   /**
-   * Stops the current run (if any), replaces the bound source observable
-   * with `newSource$`, resets all internal state, and immediately starts a
-   * fresh subscription to the new source.
-   *
-   * The original observer supplied to {@link createPausable} is preserved
-   * and re-subscribed to the new internal subject automatically.
-   *
-   * This is the **only** way to change the source observable after a
-   * {@link createPausable} call. Unlike `stop()` + `start()`, `renew()`
-   * swaps the underlying observable before starting.
-   *
-   * @param newSource$ - The new RxJS observable to wrap.
-   */
-  renew = (newSource$: Observable<T>, observer = this.#observer) => {
-    this.stop();
-    const out = new Pausable(newSource$, observer);
-    // Cancel any in-flight timers from the previous run.
-    return out;
-  };
-
-  /**
    * Dispatches a no-argument lifecycle command by name.
    *
    * Equivalent to calling the corresponding method directly. Useful when
    * the command is determined dynamically.
    *
-   * Note: `renew` cannot be dispatched here because it requires a
-   * `newSource$` argument. Call `pausable.renew(obs$)` directly.
-   *
-   * @param action - The {@link Command} to execute.
+   * @param action - The {@linkcode Command} to execute.
    */
   command = (action: Command) => {
     return this[action]();
@@ -232,26 +199,21 @@ export type CreatePausable_F = <T = any>(
 ) => Pausable<T>;
 
 /**
- * Creates a {@link Pausable} wrapper around a source RxJS observable.
+ * Creates a {@linkcode Pausable} wrapper around a source RxJS observable.
  *
- * The returned object lets you `start`, `stop`, `pause`, `resume`, and
- * `renew` the flow of events from `source$` to `observer`. Events that
+ * The returned object lets you `start`, `stop`, `pause`, and `resume`
+ * the flow of events from `source$` to `observer`. Events that
  * arrive while the instance is paused are timestamped and buffered; when
  * `resume` is called they are replayed to the observer with their original
  * relative timing preserved.
- *
- * The source observable and internal subject are **constant per run** —
- * `start()` always uses the observable that was active when the last
- * `renew()` was called (or the one passed here). To switch to a different
- * observable, call `renew(newSource$)`.
  *
  * @template T - The value type emitted by the source observable.
  *
  * @param source$ - The RxJS observable whose emissions should be controlled.
  * @param observer - Optional subscriber that receives forwarded events.
- *   Accepts either a plain `next` callback or a partial {@link Observer}.
+ *   Accepts either a plain `next` callback or a partial {@linkcode Observer}.
  *
- * @returns A {@link Pausable} instance exposing lifecycle controls and a
+ * @returns A {@linkcode Pausable} instance exposing lifecycle controls and a
  *   read-only `state` property.
  *
  * @example
@@ -265,9 +227,6 @@ export type CreatePausable_F = <T = any>(
  * setTimeout(() => pausable.pause(),  3500);
  * setTimeout(() => pausable.resume(), 6000);
  * setTimeout(() => pausable.stop(),   9000);
- *
- * // Switch to a new source and restart cleanly:
- * setTimeout(() => pausable.renew(interval(500)), 10000);
  * ```
  */
 export const createPausable: CreatePausable_F = (source$, observer) => {

@@ -5,21 +5,68 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.1.0] - 11/03/2026** => _01:05_
+
+</summary>
+
+### Breaking Changes
+
+- 🚫 Remove `renew()` method — the source observable is now fixed at
+  creation time and cannot be swapped; `createPausable` can no longer be
+  replayed with a different source
+
+### Refactor
+
+- 🏗️ Rewrite `Pausable` as a class with TypeScript private fields (`#`) —
+  state is fully encapsulated and isolated per run
+- 🔀 Introduce internal `Subject`-based event forwarding: `arrayObserver`
+  buffers all events, `startObserver` forwards them live when running
+- 🧹 Simplify `types.ts` — remove obsolete exported types, keep only
+  `SubArgs`, `Command`, `State`, `Delayed`
+- 🗑️ Remove `dispose()` and `[Symbol.dispose]` from public API
+
+### Tests
+
+- 🧪 Add `src/fixtures.ts` with `usePrepare()` helper to share
+  source/observer/pausable setup across test suites
+- ♻️ Refactor entire test suite to use `usePrepare()` fixture, reducing
+  boilerplate
+
+### Dependencies
+
+- 📌 Pin Vitest to `3.2.4`
+- ➕ Add `@vitest/ui` for browser-based test UI
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[1.0.3] - 04/03/2026** => _00:07_
 
 </summary>
 
 ### Features
 
-- ♻️ `start()` now fully resets internal state (fresh `Subject`, cleared event buffer, reset `lastPaused` and `hasBeenPaused`), enabling true restart after `stop()`
+- ♻️ `start()` now fully resets internal state (fresh `Subject`, cleared
+  event buffer, reset `lastPaused` and `hasBeenPaused`), enabling true
+  restart after `stop()`
 
 ### Refactor
 
-- 🔀 Move `arrayObserver` and `startObserver` definitions inside `start()` so each call gets a clean subscription context
-- 🏗️ Lazily initialise `subject$` and `_source$` — they are now created on each `start()` call instead of at construction time
-- 🛡️ Simplify `resume()` guard: `command !== 'pause'` replaces the previous two-condition check
-- 🔒 `RESUME_ACTIONS.error` now also sets `command = 'stop'` before completing the subject, ensuring consistent state after an error replay
-- ✅ Add test cases #34–#44 covering restart after a full stop (verifies clean state and correct re-emission from a fresh `interval`)
+- 🔀 Move `arrayObserver` and `startObserver` definitions inside `start()`
+  so each call gets a clean subscription context
+- 🏗️ Lazily initialise `subject$` and `_source$` — they are now created on
+  each `start()` call instead of at construction time
+- 🛡️ Simplify `resume()` guard: `command !== 'pause'` replaces the previous
+  two-condition check
+- 🔒 `RESUME_ACTIONS.error` now also sets `command = 'stop'` before
+  completing the subject, ensuring consistent state after an error replay
+- ✅ Add test cases #34–#44 covering restart after a full stop (verifies
+  clean state and correct re-emission from a fresh `interval`)
 
 </details>
 
@@ -34,14 +81,20 @@ All notable changes to this project will be documented in this file.
 
 ### Docs
 
-- 📝 Add JSDoc comments to all exported types in `src/types.ts` (`SubArgs`, `Command`, `State`, `Pausable`, `CreatePausable_F`, `Delayed`)
+- 📝 Add JSDoc comments to all exported types in `src/types.ts` (`SubArgs`,
+  `Command`, `State`, `Pausable`, `CreatePausable_F`, `Delayed`)
 - 📝 Add JSDoc to `perform` helper in `src/helpers.ts`
-- 📝 Add JSDoc to `createPausable` in `src/index.ts`, including `@example` usage
-- 📝 Document all internal variables and methods inside `createPausable` (`lastPaused`, `events`, `canClear`, `perform`, `RESUME_ACTIONS`, `startObserver`, `out.*`)
+- 📝 Add JSDoc to `createPausable` in `src/index.ts`, including `@example`
+  usage
+- 📝 Document all internal variables and methods inside `createPausable`
+  (`lastPaused`, `events`, `canClear`, `perform`, `RESUME_ACTIONS`,
+  `startObserver`, `out.*`)
 
 ### Refactor
 
-- 🏷️ Replace `NodeJS.Timeout` with `ReturnType<typeof setTimeout>` for the `timer` parameter in the internal `perform` wrapper for cross-runtime compatibility
+- 🏷️ Replace `NodeJS.Timeout` with `ReturnType<typeof setTimeout>` for the
+  `timer` parameter in the internal `perform` wrapper for cross-runtime
+  compatibility
 
 </details>
 
@@ -57,11 +110,14 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - ♻️ Extract `perform` utility into new `src/helpers.ts` module
-- 🔄 Move `Delayed<T>` type from `src/index.ts` to `src/types.ts` and export it
+- 🔄 Move `Delayed<T>` type from `src/index.ts` to `src/types.ts` and
+  export it
 - 🏷️ Rename internal `array` buffer to `events` for clarity
 - 🧩 Extract `RESUME_ACTIONS` object to centralize resume event dispatching
-- 🧩 Extract `startObserver` object to separate start-phase subscription logic
-- 🗂️ Group all control methods (`start`, `stop`, `pause`, `resume`, `command`) into a single `out` object using method shorthand syntax
+- 🧩 Extract `startObserver` object to separate start-phase subscription
+  logic
+- 🗂️ Group all control methods (`start`, `stop`, `pause`, `resume`,
+  `command`) into a single `out` object using method shorthand syntax
 - ↩️ `start()` now returns the RxJS subscription created internally
 
 </details>

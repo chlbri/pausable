@@ -12,15 +12,18 @@ controls.
   `pause`, and `resume`
 - 🔁 **Restartable**: Call `start()` again after `stop()` to fully restart
   the stream with a clean slate
-- 🗺️ **State Inspector**: Read the current state (`'stopped'` | `'running'`
-  | `'paused'`) via the `state` property
+- � **Fixed Source**: The source observable is bound at creation time and
+  never changes — `createPausable` cannot be replayed with a different
+  source
+- �🗺️ **State Inspector**: Read the current state (`'stopped'` |
+  `'running'` | `'paused'`) via the `state` property
 - 🔄 **Command Interface**: Programmatic control via `command()` method
 - 🧩 **Smart Buffering**: Values emitted during pause are buffered and
   re-emitted after `resume()` with correct relative timing
 - 📦 **Flexible Observers**: Support for function, partial, full, or no
   observer
-- 🔌 **Proper Lifecycle**: Automatic subscription management and cleanup per
-  `start()` call
+- 🔌 **Proper Lifecycle**: Automatic subscription management and cleanup
+  per `start()` call
 - 💪 **TypeScript**: Full type safety with TypeScript support
 - ✅ **Well Tested**: 100% test coverage with comprehensive test suite
 
@@ -126,9 +129,15 @@ pausable.start();
 
 Creates a pausable wrapper around an RxJS observable.
 
+> **Note:** The `source$` observable is **fixed at creation time** and
+> cannot be changed afterwards. If you need to switch to a different
+> source, create a new `createPausable` instance. The source is never
+> mutated or replaced internally.
+
 **Parameters:**
 
-- `source$`: The source Observable to wrap
+- `source$`: The source Observable to wrap. Bound permanently to this
+  instance — cannot be swapped after creation.
 - `observer` (optional): Can be:
   - A function `(value: T) => void`
   - A partial observer `{ next?: ..., error?: ..., complete?: ... }`
@@ -192,14 +201,15 @@ stopped ──start()──> running ──pause()──> paused     │
 **States:**
 
 - `stopped`: Initial state (or after `stop()`); not forwarding values.
-  Calling `start()` resets all internal state and begins a fresh subscription.
+  Calling `start()` resets all internal state and begins a fresh
+  subscription.
 - `running`: Actively forwarding values from source to observer
 - `paused`: Stream suspended; source values are buffered until `resume()`
 
 **Valid transitions:**
 
 | Current state | Action     | Next state |
-|---------------|------------|------------|
+| ------------- | ---------- | ---------- |
 | `stopped`     | `start()`  | `running`  |
 | `running`     | `pause()`  | `paused`   |
 | `running`     | `stop()`   | `stopped`  |
@@ -227,7 +237,9 @@ import { interval } from 'rxjs';
 import { createPausable } from '@bemedev/rx-pausable';
 
 const values: number[] = [];
-const pausable = createPausable(interval(1000), v => values.push(v as number));
+const pausable = createPausable(interval(1000), v =>
+  values.push(v as number),
+);
 
 pausable.start();
 // ... after some time: values = [0, 1, 2]
