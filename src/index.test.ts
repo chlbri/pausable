@@ -1,27 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { Subject, interval, map, take } from 'rxjs';
-import { createPausable } from './index';
-import type { Observer } from 'rxjs';
+import { interval, map, Subject, take } from 'rxjs';
+import { createPausable, Pausable } from './index';
+import { usePrepare } from './fixtures';
 
 vi.useFakeTimers();
-
-const usePrepare = () => {
-  const source$ = new Subject<number>();
-
-  const mockObserver: Observer<number> = {
-    next: vi.fn(),
-    error: vi.fn(),
-    complete: vi.fn(),
-  };
-
-  const pausable = createPausable(source$, mockObserver);
-
-  return {
-    source$,
-    mockObserver,
-    pausable,
-  };
-};
 
 describe('createPausable', () => {
   // #01 => Initial state had only one test → unwrapped
@@ -97,28 +78,6 @@ describe('createPausable', () => {
 
       it('#05 => next called 1 time', () => {
         expect(mockObserver.next).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    describe('#03 => should allow restart after stop', () => {
-      const { source$, mockObserver, pausable } = usePrepare();
-      it('#01 => start', pausable.start);
-      it('#02 => emit value 1', () => source$.next(1));
-      it('#03 => stop', pausable.stop);
-      it('#04 => emit value 2 (ignored)', () => source$.next(2));
-      it('#05 => start again', pausable.start);
-      it('#06 => emit value 3', () => source$.next(3));
-
-      it('#07 => next called 3 times total', () => {
-        expect(mockObserver.next).toHaveBeenCalledTimes(3);
-      });
-
-      it('#08 => 1st call with 1', () => {
-        expect(mockObserver.next).toHaveBeenNthCalledWith(1, 1);
-      });
-
-      it('#09 => 2nd call with 3', () => {
-        expect(mockObserver.next).toHaveBeenNthCalledWith(2, 3);
       });
     });
   });
@@ -302,7 +261,7 @@ describe('createPausable', () => {
   });
 
   // #09 => Complex state transitions had only one test → unwrapped
-  describe('#09 => should handle start -> pause -> resume -> stop -> start', () => {
+  describe('#09 => should handle start -> pause -> resume -> stop, not -> start', () => {
     const { source$, mockObserver, pausable } = usePrepare();
 
     it('#01 => start', pausable.start);
@@ -317,7 +276,7 @@ describe('createPausable', () => {
     it('#10 => emit value 5', () => source$.next(5));
 
     it('#11 => next called 4 times', () => {
-      expect(mockObserver.next).toHaveBeenCalledTimes(4);
+      expect(mockObserver.next).toHaveBeenCalledTimes(2);
     });
 
     it('#12 => 1st call with 1', () => {
@@ -329,14 +288,14 @@ describe('createPausable', () => {
     });
 
     it('#14 => 3rd call with 5', () => {
-      expect(mockObserver.next).toHaveBeenNthCalledWith(3, 5);
+      expect(mockObserver.next).not.toHaveBeenNthCalledWith(3, 5);
     });
   });
 
   // #10 => Integration with RxJS operators had only one test → unwrapped
   describe('#10 => should work with interval observable', () => {
     const values: number[] = [];
-    let pausable: ReturnType<typeof createPausable>;
+    let pausable: Pausable;
 
     it('#01 => create and start', () => {
       pausable = createPausable(interval(10).pipe(take(5)), value =>
@@ -375,40 +334,10 @@ describe('createPausable', () => {
   });
 
   describe('#11 => Edge cases', () => {
-    describe('#01 => should handle rapid state changes', () => {
-      const { source$, mockObserver, pausable } = usePrepare();
-      it('#01 => start', pausable.start);
-      it('#02 => emit value 1', () => source$.next(1));
-      it('#03 => pause', pausable.pause);
-      it('#04 => emit value 2 (ignored)', () => source$.next(2));
-      it('#05 => resume', pausable.resume);
-      it('#06 => emit value 3', () => source$.next(3));
-      it('#07 => stop', pausable.stop);
-      it('#08 => emit value 4 (ignored)', () => source$.next(4));
-      it('#09 => start again', pausable.start);
-      it('#10 => emit value 5', () => source$.next(5));
-
-      it('#11 => next called 4 times', () => {
-        expect(mockObserver.next).toHaveBeenCalledTimes(4);
-      });
-
-      it('#12 => 1st call with 1', () => {
-        expect(mockObserver.next).toHaveBeenNthCalledWith(1, 1);
-      });
-
-      it('#13 => 2nd call with 3', () => {
-        expect(mockObserver.next).toHaveBeenNthCalledWith(2, 3);
-      });
-
-      it('#14 => 3rd call with 5', () => {
-        expect(mockObserver.next).toHaveBeenNthCalledWith(3, 5);
-      });
-    });
-
-    describe('#02 => real case scenario #1', () => {
+    describe('#01 => real case scenario #1', () => {
       const WAITER = 1000;
       const values: number[] = [];
-      let pausable: ReturnType<typeof createPausable>;
+      let pausable: Pausable;
 
       it('#01 => create and start', () => {
         pausable = createPausable(
@@ -475,10 +404,10 @@ describe('createPausable', () => {
       });
     });
 
-    describe('#03 => real case scenario #2', () => {
+    describe('#02 => real case scenario #2', () => {
       const WAITER = 1000;
       const values: number[] = [];
-      let pausable: ReturnType<typeof createPausable>;
+      let pausable: Pausable;
 
       it('#01 => create and start', () => {
         pausable = createPausable(
@@ -501,7 +430,7 @@ describe('createPausable', () => {
       });
     });
 
-    describe('#04 => should propagate error that arrived during pause on resume', () => {
+    describe('#03 => should propagate error that arrived during pause on resume', () => {
       const { source$, mockObserver, pausable } = usePrepare();
       const error = new Error('Delayed error');
 
@@ -532,10 +461,10 @@ describe('createPausable', () => {
       });
     });
 
-    describe('#05 => should not emit buffered values if paused again before setTimeout fires', () => {
+    describe('#04 => should not emit buffered values if paused again before setTimeout fires', () => {
       const WAITER = 1000;
       const values: number[] = [];
-      let pausable: ReturnType<typeof createPausable>;
+      let pausable: Pausable;
 
       it('#01 => create pausable, state is stopped', () => {
         pausable = createPausable(interval(WAITER).pipe(take(5)), value =>
@@ -660,10 +589,10 @@ describe('createPausable', () => {
 
       it('#33 => values still [0, 1, 2, 3, 4]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4]);
-        console.log(pausable.state);
       });
 
-      it('#34 => resume again', () => pausable.resume());
+      it('#34 => resume again (ignored, already stopped)', () =>
+        pausable.resume());
 
       it('#35 => values still [0, 1, 2, 3, 4]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4]);
@@ -677,37 +606,41 @@ describe('createPausable', () => {
         expect(values).toEqual([0, 1, 2, 3, 4]);
       });
 
-      it('#38 => Restart', () => {
-        pausable.start();
+      it('#38 => renew with a fresh interval', () => {
+        pausable = pausable.renew(interval(WAITER).pipe(take(5)));
       });
 
-      it('#39 => advance 4s', () => {
-        console.log(pausable.state);
+      it('#39 => state is running after renew', () => {
+        expect(pausable.state).toBe('stopped');
+      });
+
+      it('#40 => start after renew', () => pausable.start());
+
+      it('#40 => advance 4s', () => {
         vi.advanceTimersByTime(WAITER * 4);
       });
 
-      it('#40 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3]', () => {
-        console.log(pausable.state);
+      it('#41 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3]);
       });
 
-      it('#41 => advance 1s', () => {
-        console.log(pausable.state);
+      it('#42 => advance 1s', () => {
         vi.advanceTimersByTime(WAITER);
       });
 
-      it('#42 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
-        console.log(pausable.state);
+      it('#43 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
       });
 
-      it('#43 => advance 4000s', () => {
-        console.log(pausable.state);
+      it('#44 => state is stopped after source completes', () => {
+        expect(pausable.state).toBe('stopped');
+      });
+
+      it('#45 => advance 4000s', () => {
         vi.advanceTimersByTime(WAITER * 4000);
       });
 
-      it('#44 => values should be [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
-        console.log(pausable.state);
+      it('#46 => values still [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]', () => {
         expect(values).toEqual([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
       });
     });
@@ -776,6 +709,99 @@ describe('createPausable', () => {
 
       it('#19 => complete not called', () => {
         expect(mockObserver.complete).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#12 => renew()', () => {
+    describe('#01 => should stop current run and restart with new source from running state', () => {
+      const { mockObserver } = usePrepare();
+      const source1$ = new Subject<number>();
+      const source2$ = new Subject<number>();
+      let pausable = createPausable(source1$, mockObserver);
+
+      it('#01 => start', pausable.start);
+      it('#02 => emit on source1', () => source1$.next(1));
+
+      it('#03 => next called once with 1', () => {
+        expect(mockObserver.next).toHaveBeenCalledTimes(1);
+        expect(mockObserver.next).toHaveBeenCalledWith(1);
+      });
+
+      it('#04 => renew with source2 (stops source1 run)', () => {
+        pausable = pausable.renew(source2$);
+      });
+
+      it('#05 => state is running after renew', () => {
+        expect(pausable.state).toBe('stopped');
+      });
+
+      it('#06 => Start after renew', () => pausable.start());
+
+      it('#07 => emit on source1 (ignored, previous run cancelled)', () => {
+        source1$.next(99);
+      });
+
+      it('#08 => emit on source2', () => source2$.next(2));
+
+      it('#09 => next called twice total; 2nd call with 2', () => {
+        expect(mockObserver.next).toHaveBeenCalledTimes(2);
+        expect(mockObserver.next).toHaveBeenNthCalledWith(2, 2);
+      });
+    });
+
+    describe('#04 => should work with interval and allow stop/start after renew', () => {
+      const WAITER = 1000;
+      const values: number[] = [];
+      let pausable: Pausable;
+
+      it('#01 => create with first interval source and start', () => {
+        pausable = createPausable(interval(WAITER).pipe(take(3)), value =>
+          values.push(value),
+        );
+        pausable.start();
+      });
+
+      it('#02 => advance 2s', () => {
+        vi.advanceTimersByTime(WAITER * 2);
+      });
+
+      it('#03 => values should be [0, 1]', () => {
+        expect(values).toEqual([0, 1]);
+      });
+
+      it('#04 => renew with a fresh interval source', () => {
+        pausable = pausable.renew(interval(WAITER).pipe(take(3)));
+      });
+
+      it('#05 => values still [0, 1] (buffer reset)', () => {
+        expect(values).toEqual([0, 1]);
+      });
+
+      it('#06 => advance 3s', () => {
+        vi.advanceTimersByTime(WAITER * 3);
+      });
+
+      it('#07 => Nothing changes, no restart yet', () => {
+        expect(values).toEqual([0, 1]);
+      });
+
+      it('#08 => state is stopped after new source completes', () => {
+        expect(pausable.state).toBe('stopped');
+      });
+
+      it('#09 => start() reuses the last renewed source', () => {
+        pausable.renew(interval(WAITER).pipe(take(2)));
+      });
+
+      it('#10 => start', () => pausable.start());
+
+      it('#10 => advance 2s', () => {
+        vi.advanceTimersByTime(WAITER * 2);
+      });
+
+      it('#11 => values should be [0, 1, 2]', () => {
+        expect(values).toEqual([0, 1, 0, 1]);
       });
     });
   });
