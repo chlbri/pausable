@@ -22,6 +22,8 @@ controls.
   re-emitted after `resume()` with correct relative timing
 - 📦 **Flexible Observers**: Support for function, partial, full, or no
   observer
+- 🔗 **Dynamic Subscribe**: Add extra observers at any time via
+  `subscribe()` — returns an RxJS `Subscription` for granular control
 - 🔌 **Proper Lifecycle**: Automatic subscription management and cleanup
   per `start()` call
 - 💪 **TypeScript**: Full type safety with TypeScript support
@@ -170,6 +172,31 @@ from `running` state.
 
 Resumes the stream and re-emits all buffered values (in order, with
 relative timing). Only works from `paused` state.
+
+#### `subscribe(observer: ((value: T) => void) | Partial<Observer<T>>): Subscription`
+
+Subscribes an additional observer to the internal subject. Unlike the
+observer passed to `createPausable`, this subscriber is registered
+dynamically and receives the same forwarded events subject to the same
+pause/resume/stop lifecycle controls.
+
+Returns an RxJS `Subscription` that can be used to unsubscribe.
+
+```typescript
+import { Subject } from 'rxjs';
+import { createPausable } from '@bemedev/rx-pausable';
+
+const source$ = new Subject<number>();
+const pausable = createPausable(source$, v => console.log('primary:', v));
+
+const sub = pausable.subscribe(v => console.log('secondary:', v));
+
+pausable.start();
+source$.next(1); // primary: 1 / secondary: 1
+
+sub.unsubscribe();
+source$.next(2); // primary: 2 (secondary no longer receives)
+```
 
 #### `command(action: 'start' | 'stop' | 'pause' | 'resume'): void`
 

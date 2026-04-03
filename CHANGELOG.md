@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 <details>
 <summary>
 
+## **[1.2.0] - 03/04/2026** => _10:31_
+
+</summary>
+
+- Add `subscribe()` method to `Pausable` — permet d'ajouter dynamiquement
+  des observateurs sur le sujet interne, soumis aux mêmes contrôles de
+  cycle de vie (pause/resume/stop) que l'observateur principal
+- Add tests for `subscribe()` : 9 scénarios couvrant réception des valeurs,
+  comportement pendant la pause, unsubscribe, observateur fonction,
+  replay des valeurs bufférisées, propagation des erreurs, signal de
+  complétion, abonnements multiples et absence d'émission avant `start()`
+- <u>Test coverage **_100%_**</u>
+
+</details>
+
+<br/>
+
+<details>
+<summary>
+
 ## **[1.1.0] - 11/03/2026** => _01:05_
 
 </summary>
