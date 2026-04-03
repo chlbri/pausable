@@ -680,6 +680,112 @@ describe('createPausable', () => {
           expect(extraNext).toHaveBeenCalledWith(1);
         });
       });
+
+      describe('#05 => should receive buffered values replayed after resume', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+        it('#04 => pause', pausable.pause);
+        it('#05 => emit value 2 (buffered)', () => source$.next(2));
+        it('#06 => emit value 3 (buffered)', () => source$.next(3));
+        it('#07 => resume', pausable.resume);
+
+        it('#08 => advance 100ms', async () => {
+          await vi.advanceTimersByTimeAsync(100);
+        });
+
+        it('#09 => extraNext called 3 times', () => {
+          expect(extraNext).toHaveBeenCalledTimes(3);
+        });
+
+        it('#10 => 1st call with 1', () => {
+          expect(extraNext).toHaveBeenNthCalledWith(1, 1);
+        });
+
+        it('#11 => 2nd call with 2', () => {
+          expect(extraNext).toHaveBeenNthCalledWith(2, 2);
+        });
+
+        it('#12 => 3rd call with 3', () => {
+          expect(extraNext).toHaveBeenNthCalledWith(3, 3);
+        });
+      });
+
+      describe('#06 => should receive errors', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+        const extraError = vi.fn();
+        const error = new Error('subscribe error');
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext, error: extraError }));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+        it('#04 => emit error', () => source$.error(error));
+
+        it('#05 => extraNext called 1 time', () => {
+          expect(extraNext).toHaveBeenCalledTimes(1);
+        });
+
+        it('#06 => extraError called with error', () => {
+          expect(extraError).toHaveBeenCalledWith(error);
+        });
+      });
+
+      describe('#07 => should receive complete on stop', () => {
+        const { source$, pausable } = usePrepare();
+        const extraComplete = vi.fn();
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ complete: extraComplete }));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+        it('#04 => stop', pausable.stop);
+
+        it('#05 => extraComplete called 1 time', () => {
+          expect(extraComplete).toHaveBeenCalledTimes(1);
+        });
+      });
+
+      describe('#08 => multiple subscribers should all receive values', () => {
+        const { source$, pausable } = usePrepare();
+        const firstNext = vi.fn();
+        const secondNext = vi.fn();
+
+        it('#01 => subscribe first', () =>
+          pausable.subscribe({ next: firstNext }));
+        it('#02 => subscribe second', () =>
+          pausable.subscribe({ next: secondNext }));
+        it('#03 => start', pausable.start);
+        it('#04 => emit value 1', () => source$.next(1));
+        it('#05 => emit value 2', () => source$.next(2));
+
+        it('#06 => firstNext called 2 times', () => {
+          expect(firstNext).toHaveBeenCalledTimes(2);
+        });
+
+        it('#07 => secondNext called 2 times', () => {
+          expect(secondNext).toHaveBeenCalledTimes(2);
+        });
+      });
+
+      describe('#09 => should not receive values before start', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
+        it('#02 => emit value 1 (stopped state)', () => source$.next(1));
+        it('#03 => emit value 2 (stopped state)', () => source$.next(2));
+
+        it('#04 => extraNext not called', () => {
+          expect(extraNext).not.toHaveBeenCalled();
+        });
+      });
     });
 
     describe('#06 => should emit buffered error after resume when error arrived during pause', () => {

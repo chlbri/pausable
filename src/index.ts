@@ -1,7 +1,7 @@
+import type { Observable, Observer } from 'rxjs';
 import { Subject } from 'rxjs/internal/Subject';
 import type { Command, Delayed, State, SubArgs } from './types';
 import { perform as _perform } from './helpers';
-import { Observable, Observer } from 'rxjs';
 
 /**
  * Internal class that backs the {@linkcode Pausable} public type.
@@ -174,11 +174,7 @@ class Pausable<T = any> {
    *   callback or a partial {@linkcode Observer}.
    * @returns An RxJS `Subscription` that can be used to unsubscribe.
    */
-  subscribe = (observer: SubArgs<T>) => {
-    return this.#subject$.subscribe(
-      observer as Parameters<Subject<T>['subscribe']>[0],
-    );
-  };
+  subscribe = (observer: SubArgs<T>) => this.#subject$.subscribe(observer);
 
   /**
    * Dispatches a no-argument lifecycle command by name.
