@@ -175,7 +175,9 @@ class Pausable<T = any> {
    * @returns An RxJS `Subscription` that can be used to unsubscribe.
    */
   subscribe = (observer: SubArgs<T>) => {
-    return this.#subject$.subscribe(observer as Parameters<Subject<T>['subscribe']>[0]);
+    return this.#subject$.subscribe(
+      observer as Parameters<Subject<T>['subscribe']>[0],
+    );
   };
 
   /**

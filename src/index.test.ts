@@ -612,7 +612,8 @@ describe('createPausable', () => {
         const { source$, pausable } = usePrepare();
         const extraNext = vi.fn();
 
-        it('#01 => subscribe', () => pausable.subscribe({ next: extraNext }));
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
         it('#02 => start', pausable.start);
         it('#03 => emit value 1', () => source$.next(1));
         it('#04 => emit value 2', () => source$.next(2));
@@ -634,7 +635,8 @@ describe('createPausable', () => {
         const { source$, pausable } = usePrepare();
         const extraNext = vi.fn();
 
-        it('#01 => subscribe', () => pausable.subscribe({ next: extraNext }));
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
         it('#02 => start', pausable.start);
         it('#03 => emit value 1', () => source$.next(1));
         it('#04 => pause', pausable.pause);
@@ -669,7 +671,8 @@ describe('createPausable', () => {
         const { source$, pausable } = usePrepare();
         const extraNext = vi.fn();
 
-        it('#01 => subscribe with function', () => pausable.subscribe(extraNext));
+        it('#01 => subscribe with function', () =>
+          pausable.subscribe(extraNext));
         it('#02 => start', pausable.start);
         it('#03 => emit value 1', () => source$.next(1));
 
