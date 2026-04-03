@@ -607,6 +607,81 @@ describe('createPausable', () => {
       });
     });
 
+    describe('#05 => subscribe()', () => {
+      describe('#01 => should receive values when running', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+        it('#04 => emit value 2', () => source$.next(2));
+
+        it('#05 => extraNext called 2 times', () => {
+          expect(extraNext).toHaveBeenCalledTimes(2);
+        });
+
+        it('#06 => 1st call with 1', () => {
+          expect(extraNext).toHaveBeenNthCalledWith(1, 1);
+        });
+
+        it('#07 => 2nd call with 2', () => {
+          expect(extraNext).toHaveBeenNthCalledWith(2, 2);
+        });
+      });
+
+      describe('#02 => should not receive values while paused', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => subscribe', () =>
+          pausable.subscribe({ next: extraNext }));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+        it('#04 => pause', pausable.pause);
+        it('#05 => emit value 2 (buffered)', () => source$.next(2));
+
+        it('#06 => extraNext called 1 time', () => {
+          expect(extraNext).toHaveBeenCalledTimes(1);
+        });
+
+        it('#07 => called with 1', () => {
+          expect(extraNext).toHaveBeenCalledWith(1);
+        });
+      });
+
+      describe('#03 => should stop receiving after unsubscribe', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => start', pausable.start);
+        it('#02 => subscribe and store subscription', () => {
+          const sub = pausable.subscribe({ next: extraNext });
+          sub.unsubscribe();
+        });
+        it('#03 => emit value 1', () => source$.next(1));
+
+        it('#04 => extraNext not called', () => {
+          expect(extraNext).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('#04 => should work with function observer', () => {
+        const { source$, pausable } = usePrepare();
+        const extraNext = vi.fn();
+
+        it('#01 => subscribe with function', () =>
+          pausable.subscribe(extraNext));
+        it('#02 => start', pausable.start);
+        it('#03 => emit value 1', () => source$.next(1));
+
+        it('#04 => extraNext called with 1', () => {
+          expect(extraNext).toHaveBeenCalledWith(1);
+        });
+      });
+    });
+
     describe('#06 => should emit buffered error after resume when error arrived during pause', () => {
       const { source$, mockObserver, pausable } = usePrepare();
       const error = new Error('Buffered error');

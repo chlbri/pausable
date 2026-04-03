@@ -164,6 +164,23 @@ class Pausable<T = any> {
   };
 
   /**
+   * Subscribes an additional observer to the internal subject.
+   *
+   * Unlike the observer passed to {@linkcode createPausable}, this subscriber
+   * is registered dynamically and receives the same forwarded events subject
+   * to the same pause/resume/stop lifecycle controls.
+   *
+   * @param observer - The subscriber to add. Accepts either a plain `next`
+   *   callback or a partial {@linkcode Observer}.
+   * @returns An RxJS `Subscription` that can be used to unsubscribe.
+   */
+  subscribe = (observer: SubArgs<T>) => {
+    return this.#subject$.subscribe(
+      observer as Parameters<Subject<T>['subscribe']>[0],
+    );
+  };
+
+  /**
    * Dispatches a no-argument lifecycle command by name.
    *
    * Equivalent to calling the corresponding method directly. Useful when
